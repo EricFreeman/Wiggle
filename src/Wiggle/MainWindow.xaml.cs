@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace Wiggle
 {
     public partial class MainWindow
     {
+        #region Properties
+
         [DllImport("User32.dll")]
         private static extern bool SetCursorPos(int x, int y);
 
@@ -20,17 +23,39 @@ namespace Wiggle
             public Int32 Y;
         };
 
+        private int _seconds
+        {
+            get { return GetInteger(SecondsEdit.Text); }
+            set { SecondsEdit.Text = value.ToString(); }
+        }
+
+        private readonly DispatcherTimer _dispatcherTimer = new DispatcherTimer();
+
+        #endregion
+
+        #region Constructor
+
         public MainWindow()
         {
             InitializeComponent();
 
-            Wiggle();
+            _dispatcherTimer.Tick += Wiggle; 
+            _seconds = 10;
+            SetInterval(null, null);
+            _dispatcherTimer.Start();
         }
 
-        private void Wiggle()
+        #endregion
+
+        #region Mouse Control
+
+        private bool _moveLeft;
+
+        private void Wiggle(object sender, EventArgs e)
         {
             var point = GetMousePosition();
-            SetCursorPos((int)point.X + 1, (int)point.Y);
+            SetCursorPos((int)point.X + (_moveLeft ? -1 : 1), (int)point.Y);
+            _moveLeft = !_moveLeft;
         }
 
         public static Point GetMousePosition()
@@ -39,5 +64,23 @@ namespace Wiggle
             GetCursorPos(ref w32Mouse);
             return new Point(w32Mouse.X, w32Mouse.Y);
         }
+
+        #endregion
+
+        #region Helper
+
+        public int GetInteger(string value)
+        {
+            int temp;
+            int.TryParse(value, out temp);
+            return temp;
+        }
+
+        public void SetInterval(object sender, EventArgs e)
+        {
+            _dispatcherTimer.Interval = new TimeSpan(0, 0, _seconds);
+        }
+
+        #endregion
     }
 }
