@@ -53,9 +53,7 @@ namespace Wiggle
 
         private void Wiggle(object sender, EventArgs e)
         {
-            var point = GetMousePosition();
-            SetCursorPos((int)point.X + (_moveLeft ? -1 : 1), (int)point.Y);
-            _moveLeft = !_moveLeft;
+            MoveMouse();
         }
 
         public static Point GetMousePosition()
@@ -63,6 +61,34 @@ namespace Wiggle
             var w32Mouse = new Win32Point();
             GetCursorPos(ref w32Mouse);
             return new Point(w32Mouse.X, w32Mouse.Y);
+        }
+
+        private static Win32Interop.INPUT[] _junkForMouseInput = CreateMouseInput();
+
+        private static Win32Interop.INPUT[] CreateMouseInput()
+        {
+            var i = new Win32Interop.INPUT()
+            {
+                dwType = Win32Interop.InputType.INPUT_MOUSE,
+                mkhi = new Win32Interop.MOUSEKEYBDHARDWAREINPUT()
+                {
+                    mi = new Win32Interop.MOUSEINPUT()
+                    {
+                        dx = 0,
+                        dy = 0,
+                        mouseData = 0,
+                        dwFlags = Win32Interop.MouseEventFlags.MOVE,
+                        time = 0,
+                        dwExtraInfo = IntPtr.Zero
+                    }
+                }
+            };
+            return new Win32Interop.INPUT[] { i };
+        }
+
+        private void MoveMouse()
+        {
+            Win32Interop.SendInput(1, _junkForMouseInput, Marshal.SizeOf(_junkForMouseInput[0]));
         }
 
         #endregion
