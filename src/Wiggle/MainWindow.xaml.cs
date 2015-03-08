@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Windows;
 using System.Windows.Threading;
 
 namespace Wiggle
@@ -8,20 +7,6 @@ namespace Wiggle
     public partial class MainWindow
     {
         #region Properties
-
-        [DllImport("User32.dll")]
-        private static extern bool SetCursorPos(int x, int y);
-
-        [DllImport("user32.dll")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool GetCursorPos(ref Win32Point pt);
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct Win32Point
-        {
-            public Int32 X;
-            public Int32 Y;
-        };
 
         private int _seconds
         {
@@ -31,6 +16,8 @@ namespace Wiggle
 
         private readonly DispatcherTimer _dispatcherTimer = new DispatcherTimer();
 
+        private static Win32Interop.INPUT[] _mouseInput;
+
         #endregion
 
         #region Constructor
@@ -39,7 +26,8 @@ namespace Wiggle
         {
             InitializeComponent();
 
-            _dispatcherTimer.Tick += Wiggle; 
+            _mouseInput = CreateMouseInput();
+            _dispatcherTimer.Tick += MoveMouse; 
             _seconds = 10;
             SetInterval(null, null);
             _dispatcherTimer.Start();
@@ -49,30 +37,14 @@ namespace Wiggle
 
         #region Mouse Control
 
-        private bool _moveLeft;
-
-        private void Wiggle(object sender, EventArgs e)
-        {
-            MoveMouse();
-        }
-
-        public static Point GetMousePosition()
-        {
-            var w32Mouse = new Win32Point();
-            GetCursorPos(ref w32Mouse);
-            return new Point(w32Mouse.X, w32Mouse.Y);
-        }
-
-        private static Win32Interop.INPUT[] _junkForMouseInput = CreateMouseInput();
-
         private static Win32Interop.INPUT[] CreateMouseInput()
         {
-            var i = new Win32Interop.INPUT()
+            var i = new Win32Interop.INPUT
             {
                 dwType = Win32Interop.InputType.INPUT_MOUSE,
-                mkhi = new Win32Interop.MOUSEKEYBDHARDWAREINPUT()
+                mkhi = new Win32Interop.MOUSEKEYBDHARDWAREINPUT
                 {
-                    mi = new Win32Interop.MOUSEINPUT()
+                    mi = new Win32Interop.MOUSEINPUT
                     {
                         dx = 0,
                         dy = 0,
@@ -83,12 +55,12 @@ namespace Wiggle
                     }
                 }
             };
-            return new Win32Interop.INPUT[] { i };
+            return new[] { i };
         }
 
-        private void MoveMouse()
+        private void MoveMouse(object sender, EventArgs e)
         {
-            Win32Interop.SendInput(1, _junkForMouseInput, Marshal.SizeOf(_junkForMouseInput[0]));
+            Win32Interop.SendInput(1, _mouseInput, Marshal.SizeOf(_mouseInput[0]));
         }
 
         #endregion
