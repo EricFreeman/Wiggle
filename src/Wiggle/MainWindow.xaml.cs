@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Threading;
+using Microsoft.Win32;
+using Application = System.Windows.Forms.Application;
 using ContextMenu = System.Windows.Forms.ContextMenu;
 using MenuItem = System.Windows.Forms.MenuItem;
 
@@ -25,6 +27,18 @@ namespace Wiggle
 
         private NotifyIcon _ni = new NotifyIcon();
 
+        RegistryKey rkApp = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+
+        private bool IsOpenOnStartup
+        {
+            get { return rkApp.GetValue("Wiggle") == null; }
+            set
+            {
+                if (value) rkApp.SetValue("Wiggle", Application.ExecutablePath);
+                else rkApp.DeleteValue("Wiggle", false);
+            }
+        }
+
         #endregion
 
         #region Window
@@ -39,6 +53,7 @@ namespace Wiggle
             _seconds = 10;
             SetInterval(null, null);
             _dispatcherTimer.Start();
+            StartupEdit.IsChecked = IsOpenOnStartup;
         }
 
         protected override void OnStateChanged(EventArgs e)
@@ -123,6 +138,20 @@ namespace Wiggle
         public void SetInterval(object sender, EventArgs e)
         {
             _dispatcherTimer.Interval = new TimeSpan(0, 0, _seconds);
+        }
+
+        #endregion
+
+        #region Startup
+
+        private void Startup_Checked(object sender, RoutedEventArgs e)
+        {
+            IsOpenOnStartup = true;
+        }
+
+        private void Startup_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IsOpenOnStartup = false;
         }
 
         #endregion
